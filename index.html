@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <link rel="stylesheet" href="Style.css">
+<head>
+    <title>NجبودN</title>
+</head>
+
+<body>
+    <input type="text" id="nameInput" placeholder="أدخل اسمك">
+    <button onclick="checkName()"> تم </button>
+    <p id="result"></p>
+
+    <script>
+        function checkName() {
+            var name = document.getElementById("nameInput").value;
+            var result = document.getElementById("result");
+
+            if (name === "نادين") {
+                result.textContent ="جبود";
+            } else if (name === "ديانه") {
+                result.textContent ="مذوره";
+            } 
+            else if (name === "احمد") {
+                result.textContent = "ابن كطيو"; }
+                else if (name === "فراس") {
+                result.textContent = "البارون";
+            } else {
+                result.textContent = "اسم غير معروف";
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+          
+
+
+
+
