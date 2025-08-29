@@ -1,40 +1,323 @@
 <!DOCTYPE html>
-<html>
-  <link rel="stylesheet" href="Style.css">
+<html lang="ar" dir="rtl">
 <head>
-    <title>NجبودN</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>طلبات السلطات</title>
+  <style>
+    :root {
+      --primary: #4cafef;
+      --primary-dark: #3a9bd9;
+      --bg-light: #f4f6f9;
+      --text-light: #333;
+      --bg-dark: #222;
+      --text-dark: #eee;
+      --card-light: #ffffff;
+      --card-dark: #444;
+      --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Tahoma', 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-light);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .dark-mode {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    header {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-mode header {
+      background: #333;
+    }
+
+    .toggle-dark {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: white;
+      color: var(--primary);
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .toggle-dark:hover {
+      transform: scale(1.1);
+    }
+
+    select, textarea, button {
+      width: 90%;
+      max-width: 400px;
+      margin: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      transition: border 0.3s;
+    }
+
+    select:focus, textarea:focus, button:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 5px rgba(76, 175, 239, 0.3);
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      width: 90%;
+      max-width: 400px;
+      margin: 10px 0;
+    }
+
+    li {
+      background: var(--card-light);
+      margin: 6px 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+
+    li:hover {
+      transform: translateX(5px);
+    }
+
+    .dark-mode li {
+      background: var(--card-dark);
+    }
+
+    .empty-message {
+      text-align: center;
+      color: #888;
+      font-style: italic;
+      padding: 20px;
+    }
+
+    .dark-mode .empty-message {
+      color: #aaa;
+    }
+  </style>
 </head>
-
 <body>
-    <input type="text" id="nameInput" placeholder="أدخل اسمك">
-    <button onclick="checkName()"> تم </button>
-    <p id="result"></p>
+  <header>
+    <h3 id="branchName">طلبات السلطات</h3>
+    <button class="toggle-dark" onclick="toggleDarkMode()" title="تبديل الوضع الليلي">☾</button>
+  </header>
 
-    <script>
-        function checkName() {
-            var name = document.getElementById("nameInput").value;
-            var result = document.getElementById("result");
+  <select id="branch" required>
+    <option value="" disabled selected>-- اختر الفرع --</option>
+    <option value="الطاقة">الطاقة</option>
+    <option value="البكرلي">البكرلي</option>
+    <option value="نادر">نادر</option>
+  </select>
 
-            if (name === "نادين") {
-                result.textContent ="جبود";
-            } else if (name === "ديانه") {
-                result.textContent ="مذوره";
-            } 
-            else if (name === "احمد") {
-                result.textContent = "ابن كطيو"; }
-                else if (name === "فراس") {
-                result.textContent = "البارون";
-            } else {
-                result.textContent = "اسم غير معروف";
-            }
+  <textarea id="orderInput" rows="6" placeholder="ألصق رسالة الطلب هنا..."></textarea>
+
+  <div class="actions">
+    <button onclick="extractOrders()">استخراج الطلبات</button>
+    <button onclick="clearInput()" style="background:#f44336;">🗑️ تفريغ</button>
+    <button onclick="clearOrders()" class="clear-btn">حذف الكل</button>
+  </div>
+
+  <ul id="ordersList">
+    <li class="empty-message">لا توجد طلبات بعد</li>
+  </ul>
+
+  <button id="sendBtn" onclick="sendWhatsApp()">إرسال للواتساب</button>
+
+  <script>
+    // قائمة الأصناف مع جميع المرادفات
+    const menuItems = {
+      "فتوش": ["فتوش", "سلطة فتوش", "فتوش ع الطريقه البنانيه", "فتوش على الطريقه اللبنانيه"],
+      "سيزر": ["سيزر", "سلطة سيزر", "سلطه سيزر"],
+      "الانوار": ["الانوار", "سلطة الانوار", "سلطة الانوار2"],
+      "باربكيو": ["باربكيو", "سلطة الباربكيو", "سلطة الباربكيو 2"],
+      "تونه": ["تونه", "سلطة التونه", "سلطه تونه"],
+      "فتة حمص": ["فتة حمص", "فته حمص", "فتة حمص على الطريقة اللبنانية", "فته حمص على الطريقة اللبانيه", "فته حمص5", "فته حمص 5", "فتة حمص5"],
+      "فتة باذنجان": ["فتة باذنجان", "فته باذنجان", "فتةباذنجان", "فتة باذنجان على الطريقة اللبنانية", "فته باذنجان على الطريقه البنانيه", "فته باذنجان 5", "فته باذنجان5", "متبل باذجان على الطريقه اللبنانيه"]
+    };
+
+    // قائمة الفروع
+    const branches = ["الطاقة", "البكرلي", "نادر"];
+
+    // عناصر DOM
+    const branchSelect = document.getElementById("branch");
+    const branchNameEl = document.getElementById("branchName");
+    const orderInput = document.getElementById("orderInput");
+    const ordersList = document.getElementById("ordersList");
+    const sendBtn = document.getElementById("sendBtn");
+
+    // تحديث اسم الفرع
+    branchSelect.addEventListener("change", () => {
+      const branch = branchSelect.value;
+      branchNameEl.innerText = branch ? `فرع: ${branch}` : "طلبات السلطات";
+    });
+
+    // استخراج الطلبات بدقة وبدون تكرار
+    function extractOrders() {
+      const branch = branchSelect.value;
+      const input = orderInput.value.trim();
+
+      if (!branch) return alert("⚠️ الرجاء اختيار الفرع أولًا.");
+      if (!input) return alert("⚠️ الرجاء لصق رسالة الطلب.");
+
+      clearOrders(false);
+
+      const lines = input
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      const orders = {};
+      let currentBranch = null;
+
+      lines.forEach(line => {
+        // تحديد الفرع الحالي
+        const detectedBranch = branches.find(b => line.includes(b));
+        if (detectedBranch) {
+          currentBranch = detectedBranch;
+          return;
         }
-    </script>
+
+        // تجاهل السطور التي لا تخص الفرع المختار
+        if (currentBranch && currentBranch !== branch) return;
+
+        // البحث عن الأصناف
+        for (const [itemName, synonyms] of Object.entries(menuItems)) {
+          if (orders[itemName] !== undefined) continue; // منع التكرار
+
+          for (const synonym of synonyms) {
+            const escaped = synonym.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            // يدعم: "فتوش 2"، "2 فتوش"، "فتوش×2"، "2×فتوش"، "فته حمص5"
+            const regex = new RegExp(`(${escaped})\\s*[×x]*\\s*(\\d*)$|^(\\d+)\\s*[×x]*\\s*(${escaped})`, 'i');
+            const match = line.match(regex);
+
+            if (match) {
+              const count = parseInt(match[2] || match[3] || "1", 10) || 1;
+              orders[itemName] = (orders[itemName] || 0) + count;
+              break; // تجنب تكرار نفس الصنف
+            }
+          }
+        }
+      });
+
+      // عرض النتائج
+      if (Object.keys(orders).length === 0) {
+        const li = document.createElement("li");
+        li.className = "empty-message";
+        li.textContent = "لم يتم العثور على طلبات مطابقة.";
+        ordersList.appendChild(li);
+        sendBtn.disabled = true;
+      } else {
+        Object.entries(orders)
+          .sort((a, b) => b[1] - a[1]) // من الأكثر إلى الأقل
+          .forEach(([item, qty]) => {
+            const li = document.createElement("li");
+            li.textContent = `${item} × ${qty}`;
+            ordersList.appendChild(li);
+          });
+        sendBtn.disabled = false;
+      }
+    }
+
+    // تفريغ حقل الإدخال فقط
+    function clearInput() {
+      orderInput.value = "";
+      orderInput.focus();
+    }
+
+    // مسح قائمة الطلبات المستخرجة
+    function clearOrders(resetMessage = true) {
+      ordersList.innerHTML = "";
+      if (resetMessage) {
+        const li = document.createElement("li");
+        li.className = "empty-message";
+        li.textContent = "لا توجد طلبات بعد";
+        ordersList.appendChild(li);
+      }
+      sendBtn.disabled = true;
+    }
+
+    // إرسال عبر واتساب
+    function sendWhatsApp() {
+      const branch = branchSelect.value;
+      const items = [...ordersList.querySelectorAll("li")]
+        .filter(li => !li.classList.contains("empty-message"))
+        .map(li => li.textContent)
+        .join("\n");
+
+      if (!items) return alert("❌ لا توجد طلبات لارسالها.");
+
+      const msg = `📍 فرع: ${branch}\n\n${items}`;
+      const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    // تبديل الوضع الليلي مع حفظ التفضيل
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+      localStorage.setItem("darkMode", document.body.classList.contains("dark-mode") ? "enabled" : "disabled");
+    }
+
+    // تحميل التفضيلات عند بدء التشغيل
+    window.addEventListener("DOMContentLoaded", () => {
+      if (localStorage.getItem("darkMode") === "enabled") {
+        document.body.classList.add("dark-mode");
+      }
+      sendBtn.disabled = true;
+    });
+  </script>
 </body>
 </html>
-
-
-          
-
-
-
-
